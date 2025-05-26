@@ -23,6 +23,19 @@ Registrar e identificar rostos de passageiros por meio da câmera embarcada, arm
 
 ---
 
+## Segurança e Privacidade
+- O sistema armazena apenas dados mínimos: imagem facial, ID numérico e horários.
+- Dados podem ser exportados para análise, mantendo anonimato.
+- Backup em nuvem pode ser configurado para garantir integridade dos dados.
+
+## 💡 Futuras Melhorias
+- Reconhecimento com múltiplas câmeras embarcadas
+- Autenticação por QR Code + Face
+- Integração com APIs de gestão de frota
+- Deploy em containers para atualização remota
+
+
+
 ## ⚙️ Como Usar
 
 1. Clone este repositório:
