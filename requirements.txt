@@ -1,4 +1,6 @@
 opencv-python
-face-recognition
-dlib
+face_recognition
 numpy
+pandas
+streamlit
+pillow
