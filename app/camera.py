@@ -28,24 +28,24 @@ def iniciar_reconhecimento():
             if frame_count % 5 != 0:
                 continue
 
+            # O try deve estar **aqui dentro**, para cada face
             try:
                 encoding = face_recognition.face_encodings(rgb_frame, [face_location])[0]
             except IndexError:
-                continue
+                continue  # pula para a próxima face se não conseguir pegar encoding
 
             reconhecido = False
-        for pid, emb in passageiros:
-            matches = face_recognition.compare_faces([emb], encoding, tolerance=0.35)
-            if matches[0]:
-                cv2.putText(frame, f"ID: {pid}", (left, top-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
-                registrar(pid)
-                reconhecido = True
-                break
-
+            for pid, emb in passageiros:
+                matches = face_recognition.compare_faces([emb], encoding, tolerance=0.35)
+                if matches[0]:
+                    cv2.putText(frame, f"ID: {pid}", (left, top-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
+                    registrar(pid)
+                    reconhecido = True
+                    break  # sai do loop de passageiros se já reconheceu
 
             if not reconhecido:
                 novo_id = salvar_novo_passageiro(face_crop, encoding)
-                passageiros = carregar_passageiros()
+                passageiros = carregar_passageiros()  # atualiza lista após cadastro
                 cv2.putText(frame, f"Novo ID: {novo_id}", (left, top-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,255), 2)
 
         cv2.imshow("Reconhecimento Facial", frame)
