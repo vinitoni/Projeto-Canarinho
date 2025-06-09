@@ -34,13 +34,14 @@ def iniciar_reconhecimento():
                 continue
 
             reconhecido = False
-            for pid, emb in passageiros:
-                distancia = np.linalg.norm(encoding - emb)
-                if distancia < 0.45:
-                    cv2.putText(frame, f"ID: {pid}", (left, top-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
-                    registrar(pid)
-                    reconhecido = True
-                    break
+        for pid, emb in passageiros:
+            matches = face_recognition.compare_faces([emb], encoding, tolerance=0.35)
+            if matches[0]:
+                cv2.putText(frame, f"ID: {pid}", (left, top-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
+                registrar(pid)
+                reconhecido = True
+                break
+
 
             if not reconhecido:
                 novo_id = salvar_novo_passageiro(face_crop, encoding)
