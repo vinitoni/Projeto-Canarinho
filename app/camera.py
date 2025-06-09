@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import face_recognition
+import time
 from .utils import carregar_passageiros, salvar_novo_passageiro, registrar
 
 def iniciar_reconhecimento():
@@ -10,6 +11,7 @@ def iniciar_reconhecimento():
 
     passageiros = carregar_passageiros()
     frame_count = 0
+    ultimo_cadastro = 0
 
     while True:
         ret, frame = cap.read()
@@ -28,25 +30,25 @@ def iniciar_reconhecimento():
             if frame_count % 5 != 0:
                 continue
 
-            # O try deve estar **aqui dentro**, para cada face
             try:
                 encoding = face_recognition.face_encodings(rgb_frame, [face_location])[0]
             except IndexError:
-                continue  # pula para a próxima face se não conseguir pegar encoding
+                continue
 
             reconhecido = False
             for pid, emb in passageiros:
-                matches = face_recognition.compare_faces([emb], encoding, tolerance=0.35)
-                if matches[0]:
+                distance = np.linalg.norm(encoding - emb)
+                if distance < 0.45:
                     cv2.putText(frame, f"ID: {pid}", (left, top-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
                     registrar(pid)
                     reconhecido = True
-                    break  # sai do loop de passageiros se já reconheceu
+                    break
 
-            if not reconhecido:
+            if not reconhecido and time.time() - ultimo_cadastro > 5:
                 novo_id = salvar_novo_passageiro(face_crop, encoding)
-                passageiros = carregar_passageiros()  # atualiza lista após cadastro
+                passageiros = carregar_passageiros()
                 cv2.putText(frame, f"Novo ID: {novo_id}", (left, top-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,255), 2)
+                ultimo_cadastro = time.time()
 
         cv2.imshow("Reconhecimento Facial", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):
