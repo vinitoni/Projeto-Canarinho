@@ -19,7 +19,8 @@ cursor.execute('''
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS registros (
         id INTEGER,
-        timestamp TEXT,
+        entrada TEXT,
+        saida TEXT,
         local TEXT DEFAULT 'onibus_01',
         FOREIGN KEY (id) REFERENCES passageiros(id)
     )

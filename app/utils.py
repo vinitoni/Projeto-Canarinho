@@ -23,16 +23,38 @@ def salvar_novo_passageiro(face_img, encoding):
     with open(caminho_emb, "wb") as f:
         pickle.dump(encoding, f)
     cursor.execute("UPDATE passageiros SET imagem = ? WHERE id = ?", (caminho_img, novo_id))
-    cursor.execute("INSERT INTO registros (id, timestamp) VALUES (?, ?)", (novo_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    cursor.execute("INSERT INTO registros (id, entrada) VALUES (?, ?)", (novo_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     conn.commit()
     return novo_id
 
-ultimos_registros = {}
-
-def registrar(id):
+def registrar_entrada_saida(id):
     agora = datetime.now()
-    ultimo = ultimos_registros.get(id)
-    if not ultimo or (agora - ultimo).total_seconds() > 30:
-        cursor.execute("INSERT INTO registros (id, timestamp) VALUES (?, ?)", (id, agora.strftime("%Y-%m-%d %H:%M:%S")))
-        ultimos_registros[id] = agora
+    agora_str = agora.strftime("%Y-%m-%d %H:%M:%S")
+
+    cursor.execute("SELECT entrada, saida FROM registros WHERE id = ? ORDER BY rowid DESC LIMIT 1", (id,))
+    row = cursor.fetchone()
+
+    if row is None:
+        # Primeira vez: criar entrada
+        cursor.execute("INSERT INTO registros (id, entrada) VALUES (?, ?)", (id, agora_str))
         conn.commit()
+        return "Entrada"
+
+    entrada_str, saida_str = row
+
+    if entrada_str and not saida_str:
+        entrada_dt = datetime.strptime(entrada_str, "%Y-%m-%d %H:%M:%S")
+        if (agora - entrada_dt).total_seconds() > 30:
+            cursor.execute("UPDATE registros SET saida = ? WHERE id = ? AND entrada = ?", (agora_str, id, entrada_str))
+            conn.commit()
+            return "Saída"
+        else:
+            return "Ignorado"
+
+    elif entrada_str and saida_str:
+        # Já tem entrada e saída, iniciar nova entrada
+        cursor.execute("INSERT INTO registros (id, entrada) VALUES (?, ?)", (id, agora_str))
+        conn.commit()
+        return "Entrada"
+
+    return "Ignorado"

@@ -11,13 +11,15 @@ cursor = conn.cursor()
 st.set_page_config(page_title="Painel de Passageiros", layout="wide")
 st.title("🚌 Dashboard – Reconhecimento Facial no Ônibus")
 
-st.markdown("### 📋 Histórico de Registros")
+st.markdown("### 📋 Histórico de Entradas e Saídas")
+
+# Leitura dos registros atualizados
 df = pd.read_sql_query("""
     SELECT registros.rowid AS registro_id, registros.id, passageiros.nome, passageiros.imagem, 
-           registros.timestamp, registros.local 
+           registros.entrada, registros.saida, registros.local
     FROM registros 
     JOIN passageiros ON passageiros.id = registros.id 
-    ORDER BY timestamp DESC
+    ORDER BY registros.entrada DESC
 """, conn)
 
 # Filtros
@@ -26,10 +28,26 @@ with st.sidebar:
     filtro_nome = st.text_input("Filtrar por nome")
     if filtro_nome:
         df = df[df["nome"].str.contains(filtro_nome, case=False, na=False)]
+    st.header("⚙️ Administração")
 
+    if st.button("🧹 Limpar TODOS os dados"):
+        st.warning("Você está prestes a deletar TODOS os dados. Essa ação é irreversível!")
+        if st.button("🚨 Confirmar exclusão TOTAL"):
+            # Deleta registros do banco
+            cursor.execute("DELETE FROM registros")
+            cursor.execute("DELETE FROM passageiros")
+            conn.commit()
+
+            # Remove arquivos de imagem e embeddings
+            for pasta in ["passageiros", "embeddings"]:
+                for arquivo in os.listdir(pasta):
+                    os.remove(os.path.join(pasta, arquivo))
+
+            st.success("Todos os dados foram apagados com sucesso. Recarregue a página.")
+            
 # Mostrar registros
 for i, row in df.iterrows():
-    with st.expander(f"📌 ID {row['id']} - {row['nome'] or 'Sem nome'} ({row['timestamp']})"):
+    with st.expander(f"📌 ID {row['id']} - {row['nome'] or 'Sem nome'} ({row['entrada'] or 'Sem entrada'})"):
         cols = st.columns([1, 2])
         with cols[0]:
             if os.path.exists(row["imagem"]):
@@ -37,6 +55,10 @@ for i, row in df.iterrows():
             else:
                 st.warning("Imagem não encontrada.")
         with cols[1]:
+            st.markdown(f"**🕒 Entrada:** {row['entrada'] or '---'}")
+            st.markdown(f"**🚪 Saída:** {row['saida'] or '---'}")
+            st.markdown(f"**📍 Local:** {row['local']}")
+
             novo_nome = st.text_input("Editar nome", value=row["nome"], key=f"nome_{row['registro_id']}")
             if st.button("Salvar", key=f"salvar_{row['registro_id']}"):
                 cursor.execute("UPDATE passageiros SET nome = ? WHERE id = ?", (novo_nome, row["id"]))

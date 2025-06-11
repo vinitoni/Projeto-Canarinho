@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import face_recognition
 import time
-from .utils import carregar_passageiros, salvar_novo_passageiro, registrar
+from .utils import carregar_passageiros, salvar_novo_passageiro, registrar_entrada_saida
 
 def iniciar_reconhecimento():
     cap = cv2.VideoCapture(0)
@@ -39,15 +39,21 @@ def iniciar_reconhecimento():
             for pid, emb in passageiros:
                 distance = np.linalg.norm(encoding - emb)
                 if distance < 0.45:
-                    cv2.putText(frame, f"ID: {pid}", (left, top-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
-                    registrar(pid)
+                    status = registrar_entrada_saida(pid)
+
+                    if status != "Ignorado":
+                        cor = (0, 255, 0) if status == "Entrada" else (0, 0, 255)
+                        cv2.putText(frame, f"{status} - ID: {pid}", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, cor, 2)
+                    else:
+                        cv2.putText(frame, f"ID {pid} - Ignorado", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (100, 100, 100), 1)
+
                     reconhecido = True
                     break
 
             if not reconhecido and time.time() - ultimo_cadastro > 5:
                 novo_id = salvar_novo_passageiro(face_crop, encoding)
                 passageiros = carregar_passageiros()
-                cv2.putText(frame, f"Novo ID: {novo_id}", (left, top-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,255), 2)
+                cv2.putText(frame, f"Novo ID: {novo_id}", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 165, 255), 2)
                 ultimo_cadastro = time.time()
 
         cv2.imshow("Reconhecimento Facial", frame)
