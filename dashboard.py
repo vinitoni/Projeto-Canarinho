@@ -44,10 +44,24 @@ with st.sidebar:
                     os.remove(os.path.join(pasta, arquivo))
 
             st.success("Todos os dados foram apagados com sucesso. Recarregue a página.")
-            
+
 # Mostrar registros
-for i, row in df.iterrows():
-    with st.expander(f"📌 ID {row['id']} - {row['nome'] or 'Sem nome'} ({row['entrada'] or 'Sem entrada'})"):
+st.markdown("### 📦 Registros Detalhados")
+
+for _, row in df.iterrows():
+    entrada = row['entrada']
+    saida = row['saida']
+    nome = row['nome'] or "Sem nome"
+    permanencia = "---"
+
+    if entrada and saida:
+        dt_entrada = pd.to_datetime(entrada)
+        dt_saida = pd.to_datetime(saida)
+        permanencia = str(dt_saida - dt_entrada)
+    elif entrada and not saida:
+        permanencia = "Ainda no ônibus"
+
+    with st.expander(f"🧍 ID {row['id']} - {nome} ({entrada})"):
         cols = st.columns([1, 2])
         with cols[0]:
             if os.path.exists(row["imagem"]):
@@ -55,11 +69,12 @@ for i, row in df.iterrows():
             else:
                 st.warning("Imagem não encontrada.")
         with cols[1]:
-            st.markdown(f"**🕒 Entrada:** {row['entrada'] or '---'}")
-            st.markdown(f"**🚪 Saída:** {row['saida'] or '---'}")
-            st.markdown(f"**📍 Local:** {row['local']}")
+            st.markdown(f"**🕒 Entrada:** {entrada or '---'}")
+            st.markdown(f"**🚪 Saída:** {saida or '---'}")
+            st.markdown(f"**⏳ Permanência:** {permanencia}")
+            st.markdown(f"**📍 Local:** {row['local'] or '---'}")
 
-            novo_nome = st.text_input("Editar nome", value=row["nome"], key=f"nome_{row['registro_id']}")
+            novo_nome = st.text_input("Editar nome", value=nome, key=f"nome_{row['registro_id']}")
             if st.button("Salvar", key=f"salvar_{row['registro_id']}"):
                 cursor.execute("UPDATE passageiros SET nome = ? WHERE id = ?", (novo_nome, row["id"]))
                 conn.commit()

@@ -10,54 +10,59 @@ def iniciar_reconhecimento():
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
 
     passageiros = carregar_passageiros()
-    frame_count = 0
     ultimo_cadastro = 0
+    delay_reconhecimento = 5  # processar reconhecimento facial a cada 5 frames
+    frame_count = 0
+
+    print("[INFO] Reconhecimento iniciado. Pressione 'q' para sair.")
 
     while True:
         ret, frame = cap.read()
         if not ret:
+            print("[ERRO] Falha ao capturar imagem da câmera.")
             break
 
+        frame_count += 1
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         face_locations = face_recognition.face_locations(rgb_frame)
-        frame_count += 1
 
-        for face_location in face_locations:
-            top, right, bottom, left = face_location
-            face_crop = frame[top:bottom, left:right]
-            cv2.rectangle(frame, (left, top), (right, bottom), (255, 0, 0), 2)
+        if frame_count % delay_reconhecimento == 0:
+            encodings_atual_frame = face_recognition.face_encodings(rgb_frame, face_locations)
 
-            if frame_count % 5 != 0:
-                continue
+            for face_location, encoding in zip(face_locations, encodings_atual_frame):
+                top, right, bottom, left = face_location
+                face_crop = frame[top:bottom, left:right]
 
-            try:
-                encoding = face_recognition.face_encodings(rgb_frame, [face_location])[0]
-            except IndexError:
-                continue
+                reconhecido = False
+                for pid, emb in passageiros:
+                    distance = np.linalg.norm(encoding - emb)
+                    if distance < 0.45:
+                        status = registrar_entrada_saida(pid)
 
-            reconhecido = False
-            for pid, emb in passageiros:
-                distance = np.linalg.norm(encoding - emb)
-                if distance < 0.45:
-                    status = registrar_entrada_saida(pid)
-
-                    if status != "Ignorado":
+                        # Visual feedback
                         cor = (0, 255, 0) if status == "Entrada" else (0, 0, 255)
-                        cv2.putText(frame, f"{status} - ID: {pid}", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, cor, 2)
-                    else:
-                        cv2.putText(frame, f"ID {pid} - Ignorado", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (100, 100, 100), 1)
+                        texto = f"{status} - ID: {pid}" if status != "Ignorado" else f"ID {pid} - Ignorado"
+                        cv2.rectangle(frame, (left, top), (right, bottom), cor, 2)
+                        cv2.putText(frame, texto, (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, cor, 2)
 
-                    reconhecido = True
-                    break
+                        reconhecido = True
+                        break
 
-            if not reconhecido and time.time() - ultimo_cadastro > 5:
-                novo_id = salvar_novo_passageiro(face_crop, encoding)
-                passageiros = carregar_passageiros()
-                cv2.putText(frame, f"Novo ID: {novo_id}", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 165, 255), 2)
-                ultimo_cadastro = time.time()
+                if not reconhecido and time.time() - ultimo_cadastro > 5:
+                    novo_id = salvar_novo_passageiro(face_crop, encoding)
+                    passageiros = carregar_passageiros()  # Atualiza lista com novo passageiro
+                    cv2.rectangle(frame, (left, top), (right, bottom), (0, 165, 255), 2)
+                    cv2.putText(frame, f"Novo ID: {novo_id}", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 165, 255), 2)
+                    ultimo_cadastro = time.time()
+
+        else:
+            # Desenha bounding boxes sem tentar reconhecer
+            for top, right, bottom, left in face_locations:
+                cv2.rectangle(frame, (left, top), (right, bottom), (100, 100, 100), 1)
 
         cv2.imshow("Reconhecimento Facial", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):
+            print("[INFO] Encerrando reconhecimento.")
             break
 
     cap.release()
