@@ -11,7 +11,7 @@ cursor = conn.cursor()
 st.set_page_config(page_title="Painel de Passageiros", layout="wide")
 st.title("🚌 Dashboard – Reconhecimento Facial no Ônibus")
 
-st.markdown("### 📋 Histórico de Entradas e Saídas")
+st.markdown("## 📋 Histórico de Entradas e Saídas")
 
 # Leitura dos registros atualizados
 df = pd.read_sql_query("""
@@ -46,7 +46,6 @@ with st.sidebar:
             st.success("Todos os dados foram apagados com sucesso. Recarregue a página.")
 
 # Mostrar registros
-st.markdown("### 📦 Registros Detalhados")
 
 for _, row in df.iterrows():
     entrada = row['entrada']
