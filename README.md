@@ -48,4 +48,3 @@ pip install -r requirements.txt
 ````
 pyhon start.py
 ````
-````
