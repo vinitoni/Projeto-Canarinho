@@ -5,3 +5,4 @@ pandas
 streamlit
 pillow
 pygame
+requests

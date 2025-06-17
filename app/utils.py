@@ -1,4 +1,4 @@
-import os 
+import os
 import pickle
 import cv2
 from datetime import datetime
@@ -24,7 +24,7 @@ def salvar_novo_passageiro(face_img, encoding, local="ônibus"):
         pickle.dump(encoding, f)
     cursor.execute("UPDATE passageiros SET imagem = ? WHERE id = ?", (caminho_img, novo_id))
     cursor.execute(
-        "INSERT INTO registros (id, entrada, local) VALUES (?, ?, ?)", 
+        "INSERT INTO registros (id, entrada, local_entrada) VALUES (?, ?, ?)",
         (novo_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), local)
     )
     conn.commit()
@@ -43,7 +43,7 @@ def registrar_entrada_saida(id, tempo_saida=15*60, tempo_reentrada=10, local="ô
     row = cursor.fetchone()
 
     if row is None:
-        cursor.execute("INSERT INTO registros (id, entrada, local) VALUES (?, ?, ?)", (id, agora_str, local))
+        cursor.execute("INSERT INTO registros (id, entrada, local_entrada) VALUES (?, ?, ?)", (id, agora_str, local))
         conn.commit()
         if cache is not None:
             cache[id] = agora
@@ -54,7 +54,10 @@ def registrar_entrada_saida(id, tempo_saida=15*60, tempo_reentrada=10, local="ô
     if entrada_str and not saida_str:
         entrada_dt = datetime.strptime(entrada_str, "%Y-%m-%d %H:%M:%S")
         if (agora - entrada_dt).total_seconds() > tempo_saida:
-            cursor.execute("UPDATE registros SET saida = ? WHERE id = ? AND entrada = ?", (agora_str, id, entrada_str))
+            cursor.execute(
+                "UPDATE registros SET saida = ?, local_saida = ? WHERE id = ? AND entrada = ?",
+                (agora_str, local, id, entrada_str)
+            )
             conn.commit()
             if cache is not None:
                 cache[id] = agora
@@ -63,7 +66,7 @@ def registrar_entrada_saida(id, tempo_saida=15*60, tempo_reentrada=10, local="ô
             return "Ignorado"
 
     elif entrada_str and saida_str:
-        cursor.execute("INSERT INTO registros (id, entrada, local) VALUES (?, ?, ?)", (id, agora_str, local))
+        cursor.execute("INSERT INTO registros (id, entrada, local_entrada) VALUES (?, ?, ?)", (id, agora_str, local))
         conn.commit()
         if cache is not None:
             cache[id] = agora

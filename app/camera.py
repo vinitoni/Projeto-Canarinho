@@ -5,16 +5,13 @@ import time
 from datetime import datetime
 import pygame
 from .utils import carregar_passageiros, salvar_novo_passageiro, registrar_entrada_saida
+from .geo import obter_localizacao_por_ip
 
-# Inicializa sons
 pygame.mixer.init()
 som_entrada = pygame.mixer.Sound("audios/entrada.wav")
 som_saida = pygame.mixer.Sound("audios/saida.wav")
 
-# Cache de último registro por ID
 ultimo_registro_por_id = {}
-
-# Cache de frames para estabilidade facial
 faces_estaveis = {}
 
 def iniciar_reconhecimento():
@@ -26,9 +23,9 @@ def iniciar_reconhecimento():
     passageiros = carregar_passageiros()
     frame_count = 0
     ultimo_cadastro = 0
-    tempo_saida = 0.25 * 60  # 15 minutos ou mudando para 0.25 fica 15 segundos
-    tempo_reentrada = 15   # 10 segundos
-    tempo_minimo_parado = 1.0  # 1 segundo parado
+    tempo_saida = 0.25 * 60
+    tempo_reentrada = 15
+    tempo_minimo_parado = 1.0
 
     mensagem_exibida = ""
     tempo_mensagem = 0
@@ -48,22 +45,15 @@ def iniciar_reconhecimento():
             face_crop = frame[top:bottom, left:right]
             cv2.rectangle(frame, (left, top), (right, bottom), (255, 0, 0), 2)
 
-            if frame_count % 5 != 0:
-                continue
-
-            try:
-                encoding = face_recognition.face_encodings(rgb_frame, [face_location])[0]
-            except IndexError:
-                continue
-
-            # Verifica se o rosto está parado
             centro_atual = ((left + right) // 2, (top + bottom) // 2)
             parado = False
+
             if 'ultima_posicao' in faces_estaveis:
-                ultima_posicao, tempo_inicial = faces_estaveis['ultima_posicao'], faces_estaveis['tempo_inicial']
+                ultima_posicao = faces_estaveis['ultima_posicao']
+                tempo_inicial = faces_estaveis['tempo_inicial']
                 distancia = np.linalg.norm(np.array(centro_atual) - np.array(ultima_posicao))
-                if distancia < 15:  # tolerância de movimento
-                    if agora - tempo_inicial > tempo_minimo_parado:
+                if distancia < 15:
+                    if agora - tempo_inicial >= tempo_minimo_parado:
                         parado = True
                 else:
                     faces_estaveis['ultima_posicao'] = centro_atual
@@ -77,6 +67,14 @@ def iniciar_reconhecimento():
                 tempo_mensagem = agora
                 continue
 
+            if frame_count % 5 != 0:
+                continue
+
+            try:
+                encoding = face_recognition.face_encodings(rgb_frame, [face_location])[0]
+            except IndexError:
+                continue
+
             reconhecido = False
             for pid, emb in passageiros:
                 distance = np.linalg.norm(encoding - emb)
@@ -85,7 +83,8 @@ def iniciar_reconhecimento():
                         pid,
                         tempo_saida=tempo_saida,
                         tempo_reentrada=tempo_reentrada,
-                        cache=ultimo_registro_por_id
+                        cache=ultimo_registro_por_id,
+                        local=obter_localizacao_por_ip()
                     )
 
                     if status == "Entrada":
@@ -104,15 +103,14 @@ def iniciar_reconhecimento():
                     break
 
             if not reconhecido and agora - ultimo_cadastro > 5:
-                novo_id = salvar_novo_passageiro(face_crop, encoding)
+                novo_id = salvar_novo_passageiro(face_crop, encoding, local=obter_localizacao_por_ip())
                 passageiros = carregar_passageiros()
                 ultimo_registro_por_id[novo_id] = datetime.now()
                 som_entrada.play()
-                mensagem_exibida = f"NOVO USUARIO CADASTRADO - ID {novo_id}"
+                mensagem_exibida = f"USUARIO CADASTRADO - ID {novo_id}"
                 tempo_mensagem = agora
                 ultimo_cadastro = agora
 
-        # Exibe mensagem
         if mensagem_exibida and (time.time() - tempo_mensagem) < 2:
             cv2.rectangle(frame, (10, 10), (310, 50), (0, 0, 0), -1)
             cv2.putText(

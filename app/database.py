@@ -1,12 +1,15 @@
 import sqlite3
 import os
 
+# Cria as pastas se não existirem
 os.makedirs("passageiros", exist_ok=True)
 os.makedirs("embeddings", exist_ok=True)
 
+# Conexão com o banco
 conn = sqlite3.connect("banco.db", check_same_thread=False)
 cursor = conn.cursor()
 
+# Tabela de passageiros
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS passageiros (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -16,14 +19,27 @@ cursor.execute('''
     )
 ''')
 
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS registros (
-        id INTEGER,
-        entrada TEXT,
-        saida TEXT,
-        local TEXT DEFAULT 'onibus_01',
-        FOREIGN KEY (id) REFERENCES passageiros(id)
-    )
-''')
+# Verifica se tabela 'registros' existe com colunas atualizadas
+cursor.execute("PRAGMA table_info(registros)")
+colunas = [col[1] for col in cursor.fetchall()]
+
+# Se a tabela já existe mas está incompleta, adiciona as colunas novas
+if "registros" in [t[0] for t in cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")]:
+    if "local_entrada" not in colunas:
+        cursor.execute("ALTER TABLE registros ADD COLUMN local_entrada TEXT DEFAULT 'ônibus'")
+    if "local_saida" not in colunas:
+        cursor.execute("ALTER TABLE registros ADD COLUMN local_saida TEXT")
+else:
+    # Se ainda não existe, cria corretamente
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS registros (
+            id INTEGER,
+            entrada TEXT,
+            saida TEXT,
+            local_entrada TEXT DEFAULT 'ônibus',
+            local_saida TEXT,
+            FOREIGN KEY (id) REFERENCES passageiros(id)
+        )
+    ''')
 
 conn.commit()

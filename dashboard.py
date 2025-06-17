@@ -13,10 +13,10 @@ st.title("🚌 Dashboard – Reconhecimento Facial no Ônibus")
 
 st.markdown("## 📋 Histórico de Entradas e Saídas")
 
-# Leitura dos registros atualizados
+# Leitura dos registros com locais separados
 df = pd.read_sql_query("""
     SELECT registros.rowid AS registro_id, registros.id, passageiros.nome, passageiros.imagem, 
-           registros.entrada, registros.saida, registros.local
+           registros.entrada, registros.saida, registros.local_entrada, registros.local_saida
     FROM registros 
     JOIN passageiros ON passageiros.id = registros.id 
     ORDER BY registros.entrada DESC
@@ -33,20 +33,15 @@ with st.sidebar:
     if st.button("🧹 Limpar TODOS os dados"):
         st.warning("Você está prestes a deletar TODOS os dados. Essa ação é irreversível!")
         if st.button("🚨 Confirmar exclusão TOTAL"):
-            # Deleta registros do banco
             cursor.execute("DELETE FROM registros")
             cursor.execute("DELETE FROM passageiros")
             conn.commit()
-
-            # Remove arquivos de imagem e embeddings
             for pasta in ["passageiros", "embeddings"]:
                 for arquivo in os.listdir(pasta):
                     os.remove(os.path.join(pasta, arquivo))
-
             st.success("Todos os dados foram apagados com sucesso. Recarregue a página.")
 
 # Mostrar registros
-
 for _, row in df.iterrows():
     entrada = row['entrada']
     saida = row['saida']
@@ -69,9 +64,10 @@ for _, row in df.iterrows():
                 st.warning("Imagem não encontrada.")
         with cols[1]:
             st.markdown(f"**🕒 Entrada:** {entrada or '---'}")
+            st.markdown(f"**📍 Local de Entrada:** {row['local_entrada'] or '---'}")
             st.markdown(f"**🚪 Saída:** {saida or '---'}")
+            st.markdown(f"**📍 Local de Saída:** {row['local_saida'] or '---'}")
             st.markdown(f"**⏳ Permanência:** {permanencia}")
-            st.markdown(f"**📍 Local:** {row['local'] or '---'}")
 
             novo_nome = st.text_input("Editar nome", value=nome, key=f"nome_{row['registro_id']}")
             if st.button("Salvar", key=f"salvar_{row['registro_id']}"):
