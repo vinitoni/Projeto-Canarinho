@@ -46,7 +46,5 @@ Registrar e identificar rostos de passageiros por meio da câmera embarcada, arm
 pip install -r requirements.txt
 ````
 ````
-python reconhecimento.py
+pyhon start.py
 ````
-````
-streamlit run dashboard.py
