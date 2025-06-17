@@ -113,16 +113,6 @@ Acesse: [http://localhost:8501](http://localhost:8501)
 
 ---
 
-## 📅 Sugestões Futuras
-
-* Integração com GPS real (módulo USB).
-* Sincronização com servidor web (cloud).
-* Exportação de relatórios CSV ou Excel.
-* Sistema de login/admin no dashboard.
-* Dashboard remoto via web/mobile.
-
----
-
-**Desenvolvido por: \[Seu Nome ou Equipe]**
+**Desenvolvido por: \[Vinícius Toni]**
 
 Projeto educacional para controle inteligente de passageiros em transporte coletivo urbano usando reconhecimento facial.
