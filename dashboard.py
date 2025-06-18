@@ -13,7 +13,6 @@ st.title("🚌 Dashboard – Reconhecimento Facial no Ônibus")
 
 st.markdown("## 📋 Histórico de Entradas e Saídas")
 
-# Leitura dos registros com locais separados
 df = pd.read_sql_query("""
     SELECT registros.rowid AS registro_id, registros.id, passageiros.nome, passageiros.imagem, 
            registros.entrada, registros.saida, registros.local_entrada, registros.local_saida
@@ -41,7 +40,7 @@ with st.sidebar:
                     os.remove(os.path.join(pasta, arquivo))
             st.success("Todos os dados foram apagados com sucesso. Recarregue a página.")
 
-# Mostrar registros
+# Registros
 for _, row in df.iterrows():
     entrada = row['entrada']
     saida = row['saida']
