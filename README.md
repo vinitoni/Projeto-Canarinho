@@ -8,6 +8,10 @@ Este sistema registra automaticamente a **entrada** e **saída** de passageiros 
 
 ## ⚖️ Funcionalidades
 
+![image](https://github.com/user-attachments/assets/58236593-6db1-49fd-b468-cc67fa53e66d)
+![image](https://github.com/user-attachments/assets/e0e3f33f-ae34-4a71-a3c2-960a35c39b5f)
+
+
 ### ✅ Reconhecimento Facial (OpenCV + face\_recognition)
 
 * Detecção em tempo real pela câmera.
